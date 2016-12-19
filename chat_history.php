@@ -4,32 +4,46 @@
 </head>
 <body>
 
+<?php
+//SQL connect
+$dsn  = 'mysql:dbname=webchat;host=127.0.0.1';
+$user = 'root';
+$pw   = 'H@chiouji1';
+$dbh = new PDO($dsn, $user, $pw);  //connect
+
+//chat log get
+$chatlog = [];
+$sql = "SELECT * FROM chat";
+$sth = $dbh->prepare($sql);        //SQLstand by
+$sth->execute();              //run
+while( ($data = $sth->fetch()) !== false )
+{
+	$chatlog[] = $data;
+}
+?>
+
 <h1>Chat History</h1>
 	<button onclick="window.close()">Refresh</button>
 	<br>
 
-	<?php 
+	<!--chat history-->
+	<?php
 		$texts = [];
-		$fp = fopen('chat_log.csv','r');
-		while ( ($data = fgets($fp) ) !== false ) 
-		{
-			$data = rtrim($data);
-		 	$buff = explode(',',$data);
-		 	$texts[] = $buff;		
-		}			
-		$count = count($texts);
-		
+		$count = count($chatlog);
+
 		for($i = 0; $i < $count; $i++)
 		{
-			for($j = 0; $j < 3; $j++)
+			$j = $count - $i - 1;
+			if($j >= 0)
 			{
-				print $texts[$i][$j] . " ";
-			}
+				$r = $chatlog[$j];
+				print $r["dispname"].' '.$r["comment"].' ('.$r["date"].')';
 	?>
 	<br>
 	<hr>
 	<?php
-		}
+			}
+		}		
 	?>
 	
 	<button onclick="window.close()">Refresh</button>

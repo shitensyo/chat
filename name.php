@@ -7,8 +7,11 @@
 <h1>Chat</h1>
 
 <form action="chat.php">
-	<p>Your name</p>
-	<input type="text" name="username">
+	<p>Login id</p>
+	<input type="text" name="loginid">
+	<p>Password</p>
+	<input type="text" name="password">
+	<br>
 	<input type="submit" value="Login">
 </form>
 

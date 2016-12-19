@@ -1,96 +1,166 @@
 <html>
 <head>
 	<title>Chat</title>
-	<meta http-equiv="refresh" content="5" >
 	<script type="text/javascript">
 
 	</script>
 </head>
 
+<body>
+
 <?php
 
-$username = $_REQUEST["username"];
+$loginid = $_REQUEST["loginid"];
+$password = $_REQUEST["password"];
+	
+//SQL connect
+$dsn  = 'mysql:dbname=webchat;host=127.0.0.1';
+$user = 'root';
+$pw   = 'H@chiouji1';
+$dbh = new PDO($dsn, $user, $pw);  //connect
 
+//user get
+$sql = "SELECT * FROM user WHERE loginid = '$loginid'";
+$sth = $dbh->prepare($sql);        //SQLstand by
+$sth->execute();              //run
+$row = $sth->fetch();
+$userid = $row["id"];
+$dispname = $row["dispname"];
+$loginpass = $row["password"];
+$del_flag = $row["del_flag"];
 
-//名前が入力されていなければ、エラー画面へ移行
-if(empty($username))
+//chat log get
+$chatlog = [];
+$sql = "SELECT * FROM chat";
+$sth = $dbh->prepare($sql);        //SQLstand by
+$sth->execute();              //run
+while( ($data = $sth->fetch()) !== false )
 {
-	header("Location: ./name_error.php");
+	$chatlog[] = $data;
+}	
+
+//================id or password not input================
+if(empty($loginid) || empty($password))
+{
+?>
+	<font color="red">
+	<h2>Error</h2>
+	<p>Please input your id and password.</p>
+	</font>
+	<form action="name.php">
+	<input type="submit" value="Back">
+	</form>
+<?php
 }
-//bodyの中身を実行
+//================not found id================
+else if(empty($dispname))
+{
+?>
+	<font color="red">
+	<h2>Error</h2>
+	<p>Not found id.</p>
+	</font>
+	<form action="name.php">
+	<input type="submit" value="Back">
+	</form>
+<?php
+}
+//================id deleted================
+else if($del_flag == true)
+{
+?>
+	<font color="red">
+	<h2>Error</h2>
+	<p>Not found id.</p>
+	</font>
+	<form action="name.php">
+	<input type="submit" value="Back">
+	</form>
+<?php
+}
+//================mistaken password================
+else if($password != $loginpass)
+{
+?>
+	<font color="red">
+	<h2>Error</h2>
+	<p>Mistaken password.</p>
+	</font>
+	<form action="name.php">
+	<input type="submit" value="Back">
+	</form>
+<?php
+}
+//================chat================
 else
 {
+//last login date update
+$current_date = date('Y-m-d H:i:s');
+$sql = "UPDATE user SET lastlogin_date = '$current_date' WHERE id = '$userid '";
+$sth = $dbh->prepare($sql);
+$sth->execute();
 
-//書き込み用ボタンが押されている場合はログに追記
+//writting comment
 if(isset($_POST["submitbutton"]))
 {
 	$text = $_POST["textbox"];
-
-	$fp = fopen('chat_log.csv', 'a');
-	fwrite($fp, implode(",",
-	[
-		$username, $text ,"(".date('Y-m-d H:i:s').")"
-	]));
-	fwrite($fp,"\n");
-	
-	fclose($fp);
+	$sql = "INSERT INTO chat Values('$userid', '$dispname','$text','$current_date')";
+	$sth = $dbh->prepare($sql);
+	$sth->execute();
 }
 ?>
 
-<body>
-	<p> <?php print $username; ?>	</p>
+	<!--show name-->
+	<p><?php print $dispname; ?></p>
 	
-	<!--書き込む-->
+	<!--textbox-->
 	<form method="post">
-	<input type="hidden" name="username" value="<?php print $username;?>">
+	<input type="hidden" name="username" value="<?php print $dispname;?>">
 	<input type="text" name="textbox">
 	<input type="submit" name="submitbutton" value="Write" >
 	</form>
+	
+	<!--stamp button-->
+	<input type="image" src="./res/01.png" width="32" height="32">
+	<input type="image" src="./res/02.png" width="32" height="32">
+	<input type="image" src="./res/03.png" width="32" height="32">
+	<input type="image" src="./res/04.png" width="32" height="32">
+	<input type="image" src="./res/05.png" width="32" height="32">
+	
 	<hr>
-	<!--書き込む-->
-
-	<!--更新-->
-	<br>
-	<!--更新-->
-
+	
+	<!--chat log-->	
 	<?php 
-		//=========最新15件のログを表示=========
-		$texts = [];
-		$fp = fopen('chat_log.csv','r');
-		while ( ($data = fgets($fp) ) !== false ) 
-		{
-			$data = rtrim($data);
-		 	$buff = explode(',',$data);
-		 	$texts[] = $buff;		
-		}			
-		$count = count($texts);
+		//=========show 15 new logs=========
+		$count = count($chatlog);
 		$maxCount = 15;
 		
 		for($i = 0; $i < $maxCount; $i++)
 		{
-			$r = $count - $i - 1;
-			if($r >= 0)
+			$j = $count - $i - 1;
+			if($j >= 0)
 			{
-				for($j = 0; $j < 3; $j++)
-				{
-					print $texts[$r][$j] . " ";
-				}
+				$r = $chatlog[$j];
+				print $r["dispname"].' '.$r["comment"].' ('.$r["date"].')';
 	?>
 	<br>
 	<hr>
 	<?php
 			}
 		}
-		//=========最新15件のログを表示=========
+		//=========show 15 new logs=========	
 	?>
 	
+	<!--history-->	
+	<a href="./chat_history.php" target="_blank">History</a>
+	<!--logout-->	
+	<input type="button" onclick="location.href='./name.php'"value="Logout">
 <?php
 }
 ?>
 
-	<a href="./chat_history.php" target="_blank">History</a>
-	<input type="button" onclick="location.href='./name.php'"value="Logout">
 </body>
+
 </html>
 
 
